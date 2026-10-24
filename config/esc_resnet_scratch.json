@@ -1,0 +1,16 @@
+{
+	"dataset_name": "ESC",
+	"data_dir": "/scratch/scmcdowe/esc50_spectrograms/",
+	"dataaug": true,
+	"pretrained": false,
+	"scheduler": true,
+	"model": "resnet",
+	"batch_size": 32,
+	"num_workers": 8,
+	"epochs": 450,
+	"milestones": [300, 350],
+	"lr": 1e-4,
+	"weight_decay": 1e-3,
+	"num_folds": 5,
+	"checkpoint_dir": "/scratch/scmcdowe/esc_resnet_scratch_ckpt"
+}
