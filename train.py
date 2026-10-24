@@ -1,3 +1,5 @@
+import os
+import random
 import torch
 import torchvision
 import torch.nn as nn
@@ -18,6 +20,15 @@ from tensorboardX import SummaryWriter
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_path", type=str)
+parser.add_argument("--fold", type=int, default=None)
+parser.add_argument("--seed", type=int, default=None)
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 
 def train(model, device, data_loader, optimizer, loss_fn):
@@ -72,7 +83,13 @@ if __name__ == "__main__":
     params = utils.Params(args.config_path)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    for i in range(1, params.num_folds+1):
+    if args.seed is not None:
+        set_seed(args.seed)
+        params.checkpoint_dir = os.path.join(params.checkpoint_dir, "seed{}".format(args.seed))
+        os.makedirs(params.checkpoint_dir, exist_ok=True)
+
+    folds = [args.fold] if args.fold else range(1, params.num_folds+1)
+    for i in folds:
         if params.dataaug:
             train_loader = dataloaders.datasetaug.fetch_dataloader( "{}training128mel{}.pkl".format(params.data_dir, i), params.dataset_name, params.batch_size, params.num_workers, 'train')
             val_loader = dataloaders.datasetaug.fetch_dataloader("{}validation128mel{}.pkl".format(params.data_dir, i), params.dataset_name, params.batch_size, params.num_workers, 'validation')
@@ -80,7 +97,7 @@ if __name__ == "__main__":
             train_loader = dataloaders.datasetnormal.fetch_dataloader( "{}training128mel{}.pkl".format(params.data_dir, i), params.dataset_name, params.batch_size, params.num_workers)
             val_loader = dataloaders.datasetnormal.fetch_dataloader("{}validation128mel{}.pkl".format(params.data_dir, i), params.dataset_name, params.batch_size, params.num_workers)
 
-        writer = SummaryWriter(comment=params.dataset_name)
+        writer = SummaryWriter(comment="{}_fold{}".format(params.dataset_name, i))
         if params.model=="densenet":
             model = models.densenet.DenseNet(params.dataset_name, params.pretrained).to(device)
         elif params.model=="resnet":
@@ -92,7 +109,11 @@ if __name__ == "__main__":
         optimizer = torch.optim.Adam(model.parameters(), lr=params.lr, weight_decay=params.weight_decay)
 
         if params.scheduler:
-            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
+            milestones = getattr(params, "milestones", None)
+            if milestones:
+                scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.1)
+            else:
+                scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
         else:
             scheduler = None
 
