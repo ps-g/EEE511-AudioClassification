@@ -1,3 +1,5 @@
+import os
+import random
 import torch
 import torchvision
 import torch.nn as nn
@@ -19,6 +21,14 @@ from tensorboardX import SummaryWriter
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_path", type=str)
 parser.add_argument("--fold", type=int, default=None)
+parser.add_argument("--seed", type=int, default=None)
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 
 def train(model, device, data_loader, optimizer, loss_fn):
@@ -72,6 +82,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     params = utils.Params(args.config_path)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    if args.seed is not None:
+        set_seed(args.seed)
+        params.checkpoint_dir = os.path.join(params.checkpoint_dir, "seed{}".format(args.seed))
+        os.makedirs(params.checkpoint_dir, exist_ok=True)
 
     folds = [args.fold] if args.fold else range(1, params.num_folds+1)
     for i in folds:
