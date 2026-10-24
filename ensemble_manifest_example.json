@@ -1,0 +1,28 @@
+{
+  "dataset_name": "ESC",
+  "data_dir": "/path/to/spectrograms/",
+  "folds": [1, 2, 3, 4, 5],
+
+  "members": [
+    {"name": "ft",      "model": "resnet", "ckpt": "/path/to/xinyen_checkpoints/last{fold}.pth.tar"},
+    {"name": "scratch", "model": "resnet", "ckpt": "/path/to/sam_checkpoints/last{fold}.pth.tar"}
+  ],
+
+  "ensembles": {
+    "ft_only":    ["ft"],
+    "ft+scratch": ["ft", "scratch"]
+  },
+
+  "_later_when_multi_seed_runs_exist": {
+    "members": [
+      {"name": "ft_s0", "model": "resnet", "ckpt": "/ckpt/ft/seed0/last{fold}.pth.tar"},
+      {"name": "ft_s1", "model": "resnet", "ckpt": "/ckpt/ft/seed1/last{fold}.pth.tar"},
+      {"name": "ft_s2", "model": "resnet", "ckpt": "/ckpt/ft/seed2/last{fold}.pth.tar"},
+      {"name": "ft_s3", "model": "resnet", "ckpt": "/ckpt/ft/seed3/last{fold}.pth.tar"},
+      {"name": "ft_s4", "model": "resnet", "ckpt": "/ckpt/ft/seed4/last{fold}.pth.tar"}
+    ],
+    "ensembles": {
+      "ft_deep_ensemble": ["ft_s0", "ft_s1", "ft_s2", "ft_s3", "ft_s4"]
+    }
+  }
+}
